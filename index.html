@@ -1,0 +1,132 @@
+<head>
+	<meta charset="utf-8">
+	<title>Eroad Test</title>
+	<link rel="stylesheet" href="css/style.css" media="screen" type="text/css" />
+
+	<script type="text/javascript" src="libraries/jquery-2.1.4.min.js"></script>
+	<script type="text/javascript" src="libraries/jquery.rwdImageMaps.js"></script>
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script>
+</head>
+
+<body>
+	<div>
+		  <fieldset>
+			    <legend>WORLD MAP APP</legend>
+				<p id="myname">Developed by: Hatef SanaeiRad</p>
+				<p class="contacts">Email: hatefRad@gmail.com</p>
+				<p class="contacts">Tel: +393279707005</p>
+			    <p class="contacts">Address: Via Liviana, Torreglia, PD, Italy</p>
+		  </fieldset>
+	</div>
+
+	<div class="worldmap_title">
+  		<h3>Click On A City To See More Detail..</h3>
+	</div>
+	
+	<div id="worldmap" class="worldmap">
+
+		<img src="media/worldmap.png" alt="World Map" usemap="#coordinates" id="worldmap_bg" />
+
+		<map name="coordinates">
+			<area shape="poly" coords="360,175,353,169,363,162,370,170" href="#" title="New York" alt="New York" />
+			<area shape="poly" coords="1321,536,1321,529,1325,530" href="#" title="Auckland" alt="Auckland"/>
+			<area shape="poly" coords="837,207,830,202,834,197" href="#" title="Tehran" alt="Tehran"/>
+			<area shape="poly" coords="1240,513,1237,506,1246,503" href="#" title="Sydney" alt="Sydney"/>
+			<area shape="poly" coords="719,515,714,505,728,508,729,514" href="#" title="Cape Town" alt="Cape Town"/>
+			<area shape="poly" coords="658,139,655,136,663,131,665,139" href="#" title="Paris" alt="Paris"/>
+			<area shape="poly" coords="1183,198,1184,189,1190,199,1180,199" href="#" title="Tokyo" alt="Tokyo"/>
+			<area shape="poly" coords="637,133,640,125,648,130" href="#" title="London" alt="London"/>
+			<area shape="poly" coords="176,211,190,208,186,214" href="#" title="Los Angeles" alt="Los Angeles"/>
+				
+				<!--
+				TODO
+				Add Other cities here
+				-->
+
+		</map>
+
+	</div>
+
+	<script>
+
+		$(document).ready(function(e) {
+			
+			var geocoder =  new google.maps.Geocoder();
+    		var alt;
+    		var coordinates;
+    		var timeResult;
+    		var timestamp;
+    		var utcTime;
+
+    		$('img[usemap]').rwdImageMaps();
+
+    		$('body').contextmenu( function() {
+    			return false;
+			});
+
+    		$('area').on('contextmenu', function(event){
+					alt = $(this).attr('alt');
+
+		    		geocoder.geocode({ 'address': alt}, function(results, status) {
+						lat = results[0].geometry.location.lat();
+						lng = results[0].geometry.location.lng();
+						coordinates = "Latitude: " + lat + " Longitude: " + lng;
+						timestamp = Math.floor($.now()/1000);
+						date = new Date($.now());
+
+						fixZero = function(str) {
+							return ('0' + str).slice(-2);
+						};
+
+						utcTime = getTime(date);
+
+						function getTime(date){
+							return fixZero(date.getUTCHours()) + ":" + fixZero(date.getUTCMinutes()) + ":" + fixZero(date.getUTCSeconds());
+						}
+
+						$.ajax({
+							method: "GET",
+							url:"https://maps.googleapis.com/maps/api/timezone/json?location="+lat+","+lng+"&timestamp="+timestamp,
+							context: document.body,
+							 dataType: 'json',
+							success: function (data) {
+      								timeResult = data;
+									createBubble(event);
+    							}
+    					});
+		        	});
+    		});
+
+			function createBubble(event){          
+			    
+			    setTimeout(function(){
+	  				if ($('#bubble').length > 0) {
+	    				$('#bubble').remove();
+	  					}
+				}, 10000);
+
+			    var timeZone = timeResult.timeZoneId;
+
+			    var localDiff = (timeResult.rawOffset + timeResult.dstOffset)*1000;
+			    var localTS = (timestamp*1000) + localDiff;
+				var locaTime = new Date(localTS);
+				localTime = locaTime.toISOString().slice(-13,-5);
+
+			    $('<div id="bubble" class="bubble"></div>').appendTo('body');
+			    $('.bubble').html(alt + "<br>").css('text-align','center');
+			    $('.bubble').append(coordinates + "<br>");
+			    $('.bubble').append("Timezone: " +timeZone + "<br>");
+			    $('.bubble').append("UTC Time: " +utcTime+ "<br>");
+			    $('.bubble').append("Local Time: " +localTime+ "<br>");
+			    positionTooltip(event);        
+			};
+
+    		function positionTooltip(event){
+			    var tPosX = event.pageX - 50;
+			    var tPosY = event.pageY - 50;
+			    $('div.bubble').css({'position': 'absolute', 'top': tPosY, 'left': tPosX});
+			};
+		});
+	
+	</script>
+</body>
